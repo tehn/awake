@@ -26,6 +26,8 @@
 
 engine.name = 'PolyPerc'
 
+hs = require 'halfsecond'
+
 local MusicUtil = require "musicutil"
 
 local options = {}
@@ -203,6 +205,8 @@ function init()
   params:default()
 
   clk:start()
+  
+  hs.init()
 end
 
 function g.event(x, y, z)
