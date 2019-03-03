@@ -5,21 +5,21 @@
 -- bottom sequence adds
 -- modifies note played.
 --
--- ENC1 = tempo
--- ENC2 = nav
--- ENC3 = edit
--- KEY2 = morph
--- KEY3 = toggle edit
+-- E1 tempo
+-- E2 nav
+-- E3 edit
+-- K2 morph
+-- K3 toggle edit
 --
--- KEY3 hold + KEY2 = reset pos
--- KEY3 hold + ENC1 = transpose
--- KEY3 hold + ENC2/3 = lengths
+-- K3 hold + K2 = reset pos
+-- K3 hold + E1 = transpose
+-- K3 hold + E2/3 = lengths
 --
--- KEY1 hold = ALT
--- ALT+ENC1 = scale mode
--- ALT+ENC2 = filter
--- ALT+ENC3 = release
--- ALT+KEY2 = play/pause
+-- K1 hold = ALT
+-- ALT+E1 = scale mode
+-- ALT+E2 = filter
+-- ALT+E3 = release
+-- ALT+K2 = play/pause
 --
 -- modify sound params in
 -- SYSTEM > AUDIO menu
