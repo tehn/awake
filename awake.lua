@@ -81,7 +81,7 @@ end
 local function all_notes_off()
   if (params:get("output") == 2 or params:get("output") == 3) then
     for _, a in pairs(active_notes) do
-      midi_out_device.note_off(a, nil, midi_out_channel)
+      midi_out_device:note_off(a, nil, midi_out_channel)
     end
   end
   active_notes = {}
@@ -106,7 +106,7 @@ local function step()
     
     -- MIDI out
     if (params:get("output") == 2 or params:get("output") == 3) then
-      midi_out_device.note_on(note_num, 96, midi_out_channel)
+      midi_out_device:note_on(note_num, 96, midi_out_channel)
       table.insert(active_notes, note_num)
     end
     
