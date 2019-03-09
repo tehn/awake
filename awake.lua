@@ -209,8 +209,8 @@ function init()
   hs.init()
 end
 
-function g.event(x, y, z)
-  local grid_h = g.rows()
+function g.key(x, y, z)
+  local grid_h = g.rows
   if z > 0 then
     if (grid_h == 8 and edit_mode == 1) or (grid_h == 16 and y <= 8) then
       if one.data[x] == 9-y then
