@@ -32,7 +32,7 @@
 
 engine.name = 'PolyPerc'
 
-hs = include('awake/lib/halfsecond')
+hs = include('lib/halfsecond')
 
 local MusicUtil = require "musicutil"
 
