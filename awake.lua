@@ -168,7 +168,6 @@ function init()
     options = options.OUTPUT,
     action = function(value)
       all_notes_off()
-      print("option "..value)
       if value == 4 then crow.output[2].action = "{to(5,0),to(0,0.25)}"
       elseif value == 5 then
         crow.ii.pullup(true)
