@@ -37,7 +37,7 @@ hs = include('lib/halfsecond')
 local MusicUtil = require "musicutil"
 
 local options = {}
-options.OUTPUT = {"audio", "midi", "audio + midi"}
+options.OUTPUT = {"audio", "midi", "audio + midi", "crow out 1+2", "crow ii JF"}
 options.STEP_LENGTH_NAMES = {"1 bar", "1/2", "1/3", "1/4", "1/6", "1/8", "1/12", "1/16", "1/24", "1/32", "1/48", "1/64"}
 options.STEP_LENGTH_DIVIDERS = {1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64}
 
@@ -116,25 +116,30 @@ local function step()
     -- Audio engine out
     if params:get("output") == 1 or params:get("output") == 3 then
       engine.hz(freq)
+    elseif params:get("output") == 4 then
+      crow.output[1].volts = (note_num-60)/12
+      crow.output[2].execute()
+    elseif params:get("output") == 5 then
+      crow.ii.jf.play_note((note_num-60)/12,5)
     end
     
     -- MIDI out
     if (params:get("output") == 2 or params:get("output") == 3) then
       midi_out_device:note_on(note_num, 96, midi_out_channel)
       table.insert(active_notes, note_num)
-    end
-    
-    -- Note off timeout
-    if params:get("note_length") < 4 then
-      notes_off_metro:start((60 / clk.bpm / clk.steps_per_beat / 4) * params:get("note_length"), 1)
+
+      -- Note off timeout
+      if params:get("note_length") < 4 then
+        notes_off_metro:start((60 / clk.bpm / clk.steps_per_beat / 4) * params:get("note_length"), 1)
+      end
     end
   end
-  
+
   if g then
     gridredraw()
   end
   redraw()
-  
+
 end
 
 local function stop()
@@ -161,7 +166,15 @@ function init()
   
   params:add{type = "option", id = "output", name = "output",
     options = options.OUTPUT,
-    action = all_notes_off}
+    action = function(value)
+      all_notes_off()
+      print("option "..value)
+      if value == 4 then crow.output[2].action = "{to(5,0),to(0,0.25)}"
+      elseif value == 5 then
+        crow.ii.pullup(true)
+        crow.ii.jf.mode(1)
+      end
+    end}
   params:add{type = "number", id = "midi_out_device", name = "midi out device",
     min = 1, max = 4, default = 1,
     action = function(value) midi_out_device = midi.connect(value) end}
