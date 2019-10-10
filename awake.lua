@@ -1,5 +1,5 @@
 -- awake: time changes
--- 2.0.0 @tehn
+-- 2.2.0 @tehn
 -- llllllll.co/t/21022
 --
 -- top loop plays notes
@@ -135,6 +135,9 @@ local function step()
     end
   end
 
+  if params:get("crow_clock") == 2 then crow.output[1]:execute() end
+
+
   if g then
     gridredraw()
   end
@@ -161,6 +164,14 @@ function init()
   clk.on_select_external = reset_pattern
   clk:add_clock_params()
   params:set("bpm", 91)
+
+  params:add{type = "option", id = "crow_clock", name = "crow clock out",
+    options = {"off","on"},
+    action = function(value)
+      if value == 2 then
+        crow.output[1].action = "{to(5,0),to(5,0.05),to(0,0)}"
+      end
+    end}
   
   notes_off_metro.event = all_notes_off
   
