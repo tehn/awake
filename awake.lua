@@ -298,15 +298,15 @@ end
 
 function enc(n, delta)
   if n==1 then
-    if alt and mode == 1 then
-      params:delta("probability", delta)
-    else
-      mode = util.clamp(mode+delta,1,4)
-    end
+    mode = util.clamp(mode+delta,1,4)
   elseif mode == 1 then --step
     if n==2 then
-      local p = (edit_ch == 1) and one.length or two.length
-      edit_pos = util.clamp(edit_pos+delta,1,p)
+      if alt then
+        params:delta("probability", delta)
+      else
+        local p = (edit_ch == 1) and one.length or two.length
+        edit_pos = util.clamp(edit_pos+delta,1,p)
+      end
     elseif n==3 then
       if edit_ch == 1 then
         one.data[edit_pos] = util.clamp(one.data[edit_pos]+delta,0,8)
