@@ -112,25 +112,27 @@ local function step()
   if one.data[one.pos] > 0 then
     local note_num = notes[one.data[one.pos]+two.data[two.pos]]
     local freq = MusicUtil.note_num_to_freq(note_num)
-    
+    -- Trig Probablility
+    if math.random(100) <= params:get("probability") then
     -- Audio engine out
-    if params:get("output") == 1 or params:get("output") == 3 then
-      engine.hz(freq)
-    elseif params:get("output") == 4 then
-      crow.output[1].volts = (note_num-60)/12
-      crow.output[2].execute()
-    elseif params:get("output") == 5 then
-      crow.ii.jf.play_note((note_num-60)/12,5)
-    end
-    
-    -- MIDI out
-    if (params:get("output") == 2 or params:get("output") == 3) then
-      midi_out_device:note_on(note_num, 96, midi_out_channel)
-      table.insert(active_notes, note_num)
+      if params:get("output") == 1 or params:get("output") == 3 then
+        engine.hz(freq)
+      elseif params:get("output") == 4 then
+        crow.output[1].volts = (note_num-60)/12
+        crow.output[2].execute()
+      elseif params:get("output") == 5 then
+        crow.ii.jf.play_note((note_num-60)/12,5)
+      end
+      
+      -- MIDI out
+      if (params:get("output") == 2 or params:get("output") == 3) then
+        midi_out_device:note_on(note_num, 96, midi_out_channel)
+        table.insert(active_notes, note_num)
 
-      -- Note off timeout
-      if params:get("note_length") < 4 then
-        notes_off_metro:start((60 / clk.bpm / clk.steps_per_beat / 4) * params:get("note_length"), 1)
+        -- Note off timeout
+        if params:get("note_length") < 4 then
+          notes_off_metro:start((60 / clk.bpm / clk.steps_per_beat / 4) * params:get("note_length"), 1)
+        end
       end
     end
   end
@@ -212,6 +214,8 @@ function init()
   params:add{type = "number", id = "root_note", name = "root note",
     min = 0, max = 127, default = 60, formatter = function(param) return MusicUtil.note_num_to_name(param:get(), true) end,
     action = function() build_scale() end}
+  params:add{type = "number", id = "probability", name = "probability",
+    min = 0, max = 100, default = 100,}
   params:add_separator()
 
   cs_AMP = controlspec.new(0,1,'lin',0,0.5,'')
@@ -297,8 +301,12 @@ function enc(n, delta)
     mode = util.clamp(mode+delta,1,4)
   elseif mode == 1 then --step
     if n==2 then
-      local p = (edit_ch == 1) and one.length or two.length
-      edit_pos = util.clamp(edit_pos+delta,1,p)
+      if alt then
+        params:delta("probability", delta)
+      else
+        local p = (edit_ch == 1) and one.length or two.length
+        edit_pos = util.clamp(edit_pos+delta,1,p)
+      end
     elseif n==3 then
       if edit_ch == 1 then
         one.data[edit_pos] = util.clamp(one.data[edit_pos]+delta,0,8)
@@ -427,6 +435,14 @@ function redraw()
     screen.move(26 + edit_pos*6, edit_ch==1 and 33 or 63)
     screen.line_rel(4,0)
     screen.level(15)
+    if alt then
+      screen.move(0, 30)
+      screen.level(1)
+      screen.text("prob")
+      screen.move(0, 45)
+      screen.level(15)
+      screen.text(params:get("probability"))
+    end
     screen.stroke()
   end
   -- loop lengths
