@@ -101,14 +101,27 @@ local function all_notes_off()
   active_notes = {}
 end
 
+local function morph(loop)
+  for i=1,loop.length do
+    if loop.data[i] > 0 then
+      loop.data[i] = util.clamp(loop.data[i]+math.floor(math.random()*3)-1,1,8)
+    end
+  end
+end
+
+local function random()
+  for i=1,one.length do one.data[i] = math.floor(math.random()*9) end
+  for i=1,two.length do two.data[i] = math.floor(math.random()*9) end
+end
+
 local function step()
   all_notes_off()
-  
+
   one.pos = one.pos + 1
   if one.pos > one.length then one.pos = 1 end
   two.pos = two.pos + 1
   if two.pos > two.length then two.pos = 1 end
-  
+
   if one.data[one.pos] > 0 then
     local note_num = notes[one.data[one.pos]+two.data[two.pos]]
     local freq = MusicUtil.note_num_to_freq(note_num)
@@ -240,8 +253,16 @@ function init()
 
   params:default()
 
+  crow.input[1].mode("change", 1, 0.05, "rising")
+  crow.input[1].change = function(s)
+    morph(one)
+    morph(two)
+  end
+  crow.input[2].mode("change", 1, 0.05, "rising")
+  crow.input[2].change = random
+
   clk:start()
-  
+
   hs.init()
 end
 
@@ -362,28 +383,15 @@ function key(n,z)
       else
         -- clear
         for i=1,one.length do one.data[i] = 0 end
-        for i=1,two.length do two.data[i] = 0 end 
+        for i=1,two.length do two.data[i] = 0 end
       end
     elseif n==3 and z==1 then
       if not alt==true then
         -- morph
-        if edit_ch == 1 then
-          for i=1,one.length do
-            if one.data[i] > 0 then
-              one.data[i] = util.clamp(one.data[i]+math.floor(math.random()*3)-1,0,8)
-            end
-          end
-        else
-          for i=1,two.length do
-            if two.data[i] > 0 then
-              two.data[i] = util.clamp(two.data[i]+math.floor(math.random()*3)-1,0,8)
-            end
-          end
-        end
+        if edit_ch == 1 then morph(one) else morph(two) end
       else
         -- random
-        for i=1,one.length do one.data[i] = math.floor(math.random()*9) end
-        for i=1,two.length do two.data[i] = math.floor(math.random()*9) end
+        random()
         gridredraw()
       end
     end
