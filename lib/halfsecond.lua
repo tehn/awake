@@ -42,6 +42,9 @@ function sc.init()
   params:add{id="delay_feedback", name="delay feedback", type="control", 
     controlspec=controlspec.new(0,1.0,'lin',0,0.75,""),
     action=function(x) softcut.pre_level(1,x) end}
+  params:add{id="delay_pan", name="delay pan", type="control", 
+    controlspec=controlspec.new(-1,1.0,'lin',0,0,""),
+    action=function(x) softcut.pan(1,x) end}
 end
 
 return sc
