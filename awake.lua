@@ -32,7 +32,7 @@
 
 engine.name = 'PolyPerc'
 
-hs = include('lib/halfsecond')
+local hs = include('lib/halfsecond')
 
 local MusicUtil = require "musicutil"
 
@@ -45,35 +45,78 @@ local g = grid.connect()
 
 local alt = false
 
-mode = 1
-mode_names = {"STEP","LOOP","SOUND","OPTION"}
+local mode = 1
+local mode_names = {"STEP","LOOP","SOUND","OPTION"}
 
-one = {
+local one = {
   pos = 0,
   length = 8,
   start = 1,
   data = {1,0,3,5,6,7,8,7,0,0,0,0,0,0,0,0}
 }
-two = {
+
+local two = {
   pos = 0,
   length = 7,
   start = 1,
   data = {5,7,0,0,0,0,0,0,0,0,0,0,0,0,0,0}
 }
 
+function add_pattern_params() 
+  params:add_separator()
+  
+  params:add{type = "number", id = "one_length", name = "<one> length]", min=1, max=8, 
+    default = one.length,
+    action=function(x) one.length = x end }
+
+  params:add{type = "number", id = "one_start", name = "<one> start]", min=1, max=16, 
+    default=one.start,
+    action=function(x) one.start = x end }
+  
+  for i=1,16 do
+    params:add{type = "number", id= ("one_data_"..i), name = ("<one> data "..i), min=1, max=8, 
+      default = one.data[i],
+      action=function(x)one.data[i] = x end }
+  end
+  
+  params:add_separator()
+  
+  params:add{type = "number", id = "two_length", name = "<two> length]",  min=1, max=8, 
+    default = two.length,
+    action=function(x)two.length = x end}
+  
+  params:add{type = "number", id = "two_start", name = "<two> start]",  min=1, max=16, 
+    default = two.start,
+    action=function(x)two.start = x end }
+  
+  for i=1,16 do
+    params:add{type = "number", id= "two_data_"..i, name = "<two> data "..i,  min=1, max=8, 
+      default = two.data[i],
+      action=function(x) two.data[i] = x end }
+  end
+  
+  params:add_separator()
+end
+
+local set_loop_data = function(which, step, val)
+  params:set(which.."_data_"..step, val)
+end
+
+
 local midi_out_device
 local midi_out_channel
 
 local scale_names = {}
-notes = {}
+local notes = {}
 local active_notes = {}
 
 local edit_ch = 1
 local edit_pos = 1
 
 snd_sel = 1
-snd_names = {"cut","gain","pw","rel","fb","rate"}
-snd_params = {"cutoff","gain","pw","release","delay_feedback","delay_rate"}
+local snd_names = {"cut","gain","pw","rel","fb","rate", "pan", "delay_pan"}
+local snd_params = {"cutoff","gain","pw","release", "delay_feedback","delay_rate", "pan", "delay_pan"}
+local NUM_SND_PARAMS = #snd_params
 
 local BeatClock = require 'beatclock'
 local clk = BeatClock.new()
@@ -101,17 +144,17 @@ local function all_notes_off()
   active_notes = {}
 end
 
-local function morph(loop)
+local function morph(loop, which)
   for i=1,loop.length do
     if loop.data[i] > 0 then
-      loop.data[i] = util.clamp(loop.data[i]+math.floor(math.random()*3)-1,1,8)
+      set_loop_data(which, i, util.clamp(loop.data[i]+math.floor(math.random()*3)-1,1,8))
     end
   end
 end
 
 local function random()
-  for i=1,one.length do one.data[i] = math.floor(math.random()*9) end
-  for i=1,two.length do two.data[i] = math.floor(math.random()*9) end
+  for i=1,one.length do set_loop_data(one, i, math.floor(math.random()*9)) end
+  for i=1,two.length do set_loop_data(two, i, math.floor(math.random()*9)) end
 end
 
 local function step()
@@ -202,6 +245,7 @@ function init()
     end}
   params:add{type = "number", id = "midi_out_device", name = "midi out device",
     min = 1, max = 4, default = 1,
+    
     action = function(value) midi_out_device = midi.connect(value) end}
   params:add{type = "number", id = "midi_out_channel", name = "midi out channel",
     min = 1, max = 16, default = 1,
@@ -250,13 +294,17 @@ function init()
   cs_GAIN = controlspec.new(0,4,'lin',0,1,'')
   params:add{type="control",id="gain",controlspec=cs_GAIN,
     action=function(x) engine.gain(x) end}
+  
+  cs_PAN = controlspec.new(-1,1, 'lin',0,0,'')
+  params:add{type="control",id="pan",controlspec=cs_PAN,
+    action=function(x) engine.pan(x) end}
 
-  params:default()
+
 
   crow.input[1].mode("change", 1, 0.05, "rising")
   crow.input[1].change = function(s)
-    morph(one)
-    morph(two)
+    morph(one, "one")
+    morph(two, "two")
   end
   crow.input[2].mode("change", 1, 0.05, "rising")
   crow.input[2].change = random
@@ -264,6 +312,10 @@ function init()
   clk:start()
 
   hs.init()
+  
+  add_pattern_params()
+  params:default()
+
 end
 
 function g.key(x, y, z)
@@ -271,17 +323,17 @@ function g.key(x, y, z)
   if z > 0 then
     if (grid_h == 8 and edit_ch == 1) or (grid_h == 16 and y <= 8) then
       if one.data[x] == 9-y then
-        one.data[x] = 0
+        set_loop_data("one", x, 0)
       else
-        one.data[x] = 9-y
+        set_loop_data("one", x, 9-y)
       end
     end
     if (grid_h == 8 and edit_ch == 2) or (grid_h == 16 and y > 8) then
       if grid_h == 16 then y = y - 8 end
       if two.data[x] == 9-y then
-        two.data[x] = 0
+        set_loop_data("two", x, 0)
       else
-        two.data[x] = 9-y
+        set_loop_data("two", x, 9-y)
       end
     end
     gridredraw()
@@ -330,16 +382,16 @@ function enc(n, delta)
       end
     elseif n==3 then
       if edit_ch == 1 then
-        one.data[edit_pos] = util.clamp(one.data[edit_pos]+delta,0,8)
+        params:delta("one_data_"..edit_pos, delta)
       else
-        two.data[edit_pos] = util.clamp(two.data[edit_pos]+delta,0,8)
+        params:delta("two_data_"..edit_pos, delta)
       end
     end
   elseif mode == 2 then --loop
     if n==2 then
-      one.length = util.clamp(one.length+delta,1,16)
+      params:delta("one_length", delta)
     elseif n==3 then
-      two.length = util.clamp(two.length+delta,1,16)
+      params:delta("two_length", delta)
     end
   elseif mode == 3 then --sound
     if n==2 then
@@ -382,13 +434,14 @@ function key(n,z)
         end
       else
         -- clear
-        for i=1,one.length do one.data[i] = 0 end
-        for i=1,two.length do two.data[i] = 0 end
+        for i=1,one.length do params:set("one_data_"..i, 0) end
+        for i=1,two.length do params:set("two_data_"..i, 0) end
+
       end
     elseif n==3 and z==1 then
       if not alt==true then
         -- morph
-        if edit_ch == 1 then morph(one) else morph(two) end
+        if edit_ch == 1 then morph(one, "one") else morph(two, "two") end
       else
         -- random
         random()
@@ -406,9 +459,9 @@ function key(n,z)
     end
   elseif mode == 3 then --sound
     if n==2 and z==1 then
-      snd_sel = util.clamp(snd_sel - 2,1,5)
+      snd_sel = util.clamp(snd_sel - 2,1,NUM_SND_PARAMS-1)
     elseif n==3 and z==1 then
-      snd_sel = util.clamp(snd_sel + 2,1,5)
+      snd_sel = util.clamp(snd_sel + 2,1,NUM_SND_PARAMS-1)
     end
   elseif mode == 4 then --option
     if n==2 then
@@ -427,7 +480,6 @@ function key(n,z)
           clk:start()
         end
       end
-
 
 ]]--
 
