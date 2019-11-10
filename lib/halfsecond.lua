@@ -11,7 +11,7 @@ function sc.init()
   softcut.level_slew_time(1,0.25)
 	softcut.level_input_cut(1, 1, 1.0)
 	softcut.level_input_cut(2, 1, 1.0)
-	softcut.pan(1, 0.5)
+	softcut.pan(1, 0.0)
 
   softcut.play(1, 1)
 	softcut.rate(1, 1)
