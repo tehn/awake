@@ -65,7 +65,7 @@ local two = {
 function add_pattern_params() 
   params:add_separator()
   
-  params:add{type = "number", id = "one_length", name = "<one> length]", min=1, max=8, 
+  params:add{type = "number", id = "one_length", name = "<one> length]", min=1, max=16, 
     default = one.length,
     action=function(x) one.length = x end }
 
@@ -81,7 +81,7 @@ function add_pattern_params()
   
   params:add_separator()
   
-  params:add{type = "number", id = "two_length", name = "<two> length]",  min=1, max=8, 
+  params:add{type = "number", id = "two_length", name = "<two> length]",  min=1, max=16, 
     default = two.length,
     action=function(x)two.length = x end}
   
