@@ -74,7 +74,7 @@ function add_pattern_params()
     action=function(x) one.start = x end }
   
   for i=1,16 do
-    params:add{type = "number", id= ("one_data_"..i), name = ("<one> data "..i), min=1, max=8, 
+    params:add{type = "number", id= ("one_data_"..i), name = ("<one> data "..i), min=0, max=8, 
       default = one.data[i],
       action=function(x)one.data[i] = x end }
   end
@@ -90,7 +90,7 @@ function add_pattern_params()
     action=function(x)two.start = x end }
   
   for i=1,16 do
-    params:add{type = "number", id= "two_data_"..i, name = "<two> data "..i,  min=1, max=8, 
+    params:add{type = "number", id= "two_data_"..i, name = "<two> data "..i,  min=0, max=8, 
       default = two.data[i],
       action=function(x) two.data[i] = x end }
   end
