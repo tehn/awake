@@ -153,8 +153,8 @@ local function morph(loop, which)
 end
 
 local function random()
-  for i=1,one.length do set_loop_data(one, i, math.floor(math.random()*9)) end
-  for i=1,two.length do set_loop_data(two, i, math.floor(math.random()*9)) end
+  for i=1,one.length do set_loop_data("one", i, math.floor(math.random()*9)) end
+  for i=1,two.length do set_loop_data("two", i, math.floor(math.random()*9)) end
 end
 
 local function step()
