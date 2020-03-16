@@ -7,7 +7,7 @@ Engine_PolyPerc : CroneEngine {
     var pw=0.5;
     var cutoff=1000;
     var gain=2;
-    var pan = 0;
+    var pan=0;
 
 	*new { arg context, doneCallback;
 		^super.new(context, doneCallback);
@@ -49,7 +49,6 @@ Engine_PolyPerc : CroneEngine {
 		});
 		
 		this.addCommand("pan", "f", { arg msg;
-		  postln("pan: " ++ msg[1]);
 			pan = msg[1];
 		});
 	}
