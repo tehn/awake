@@ -136,8 +136,26 @@ local deltatap = 1
 function BeatClockCrow:add_clock_params()
   params:add_option("clock", "clock", {"internal", "external: midi", "external: crow"}, self.externalcrow or 3 and self.externalmidi or 2 and 1)
   params:set_action("clock", function(x) self:clock_source_change(x) end)
+  params:add_option("crow_clock_input", "crow clock input", {"disabled","input 1","input 2"})
+  params:set_action("crow_clock_input", function()
+    if params:get("clock") == 1 or params:get("clock") == 2 then
+      params:set("crow_clock_input", 1)
+    end
+  end
+  )
   params:add_number("bpm", "bpm", 1, 480, self.bpm)
   params:set_action("bpm", function(x) self:bpm_change(x) end)
+  params:add{type = "trigger", id = "tap_tempo", name = "tap tempo", action =
+    function()
+      local tap1 = util.time()
+      deltatap = tap1 - tap
+      tap = tap1
+      local tap_tempo = 60/deltatap
+      if tap_tempo >=20 then
+        params:set("bpm",math.floor(tap_tempo+0.5))
+      end
+    end
+  }
   params:add_option("clock_out", "midi clock out?", { "no", "yes" }, self.send or 2 and 1)
   params:set_action("clock_out", function(x) if x == 1 then self.send = false else self.send = true end end)
   params:add_option("crow_clock_out", "crow clock: output 4", { "off", "on" }, self.crow_send or 2 and 1)
@@ -150,17 +168,6 @@ function BeatClockCrow:add_clock_params()
     end
   end
   )
-  params:add{type = "trigger", id = "tap_tempo", name = "tap tempo", action =
-    function()
-      local tap1 = util.time()
-      deltatap = tap1 - tap
-      tap = tap1
-      local tap_tempo = 60/deltatap
-      if tap_tempo >=20 then
-        params:set("bpm",math.floor(tap_tempo+0.5))
-      end
-    end
-  }
 end
 
 function BeatClockCrow:enable_midi()

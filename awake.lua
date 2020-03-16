@@ -1,5 +1,5 @@
 -- awake: time changes
--- 2.2.0 @tehn
+-- 2.3 @tehn
 -- llllllll.co/t/21022
 --
 -- top loop plays notes
@@ -210,6 +210,42 @@ local function stop()
   all_notes_off()
 end
 
+local function crow_init()
+  
+  crow.reset()
+  crow.clear()
+  
+  local crow_tap = 0
+  local crow_deltatap = 1
+
+  crow.input[1].mode("change", 1, 0.05, "rising")
+  crow.input[1].change = function(s)
+    if params:get("crow_clock_input") ~= 2 then
+      morph(one, "one")
+      morph(two, "two")
+    else
+      step()
+      local crow_tap1 = util.time()
+      crow_deltatap = crow_tap1 - crow_tap
+      crow_tap = crow_tap1
+      local crow_tap_tempo = (60/crow_deltatap)/4
+      params:set("bpm",math.floor(crow_tap_tempo+0.5))
+    end
+  end
+  crow.input[2].mode("change", 1, 0.05, "rising")
+  crow.input[2].change = function()
+    if params:get("crow_clock_input") ~= 3 then
+      random()
+    else
+      step()
+    end
+  end
+  
+  if params:get("output") == 4 then
+    crow.output[2].action = "{to(5,0),to(0,0.25)}"
+  end
+  
+end
 
 function init()
   for i = 1, #MusicUtil.SCALES do
@@ -217,7 +253,7 @@ function init()
   end
   
   midi_out_device = midi.connect(1)
-  midi_out_device.event = function() end
+  --midi_out_device.event = function() end
   
   clk.on_step = step
   clk.on_stop = stop
@@ -236,9 +272,7 @@ function init()
   clk:add_clock_params()
   params:set("bpm", 91)
   
-  params:add{type = "option", id = "crow_clock_input", name = "crow clock input",
-    options = {"disabled","input 1","input 2"}
-  }
+  params:add{type = "trigger", id = "clear_crow", name = "reset/clear crow", action = crow_flush}
   
   notes_off_metro.event = all_notes_off
   
@@ -247,9 +281,13 @@ function init()
     action = function(value)
       all_notes_off()
       if value == 4 then crow.output[2].action = "{to(5,0),to(0,0.25)}"
-      elseif value == 5 then
+      elseif value == 5 or value == 6 then
         crow.ii.pullup(true)
         crow.ii.jf.mode(1)
+      end
+      if value ~= 5 and value ~= 6 then
+        crow.ii.pullup(false)
+        crow.ii.jf.mode(0)
       end
     end}
   params:add{type = "number", id = "midi_out_device", name = "midi out device",
@@ -307,31 +345,7 @@ function init()
   params:add{type="control",id="pan",controlspec=cs_PAN,
     action=function(x) engine.pan(x) end}
 
-  local crow_tap = 0
-  local crow_deltatap = 1
-
-  crow.input[1].mode("change", 1, 0.05, "rising")
-  crow.input[1].change = function(s)
-    if params:get("crow_clock_input") ~= 2 then
-      morph(one, "one")
-      morph(two, "two")
-    else
-      step()
-      local crow_tap1 = util.time()
-      crow_deltatap = crow_tap1 - crow_tap
-      crow_tap = crow_tap1
-      local crow_tap_tempo = (60/crow_deltatap)/4
-      params:set("bpm",math.floor(crow_tap_tempo+0.5))
-    end
-  end
-  crow.input[2].mode("change", 1, 0.05, "rising")
-  crow.input[2].change = function()
-    if params:get("crow_clock_input") ~= 3 then
-      random()
-    else
-      step()
-    end
-  end
+  crow_init()
 
   clk:start()
 
@@ -493,20 +507,6 @@ function key(n,z)
     end
   end
 
---[[
-      gridredraw()
-      
-      
-      if not clk.external then
-        if clk.playing then
-          clk:stop()
-        else
-          clk:start()
-        end
-      end
-
-]]--
-
   redraw()
 end
 
@@ -549,22 +549,6 @@ function redraw()
     screen.level(i == two.pos and 15 or ((edit_ch == 2 and two.data[i] > 0) and 4 or (mode==2 and 6 or 1)))
     screen.stroke()
   end
-  -- txt
---[[  screen.level((not alt and not KEY3) and 15 or 4)
-  screen.move(0,10)
-  screen.text("bpm:"..params:get("bpm"))
-  screen.level(alt and 15 or 4)
-  screen.move(0,20)
-  screen.text("sc:"..params:get("scale_mode"))
-  screen.level(KEY3 and 15 or 4)
-  screen.move(0,30)
-  screen.text("rt:"..MusicUtil.note_num_to_name(params:get("root_note"), true))
-
-  screen.level(4)
-  screen.move(0,60)
-  if alt then screen.text("cut/rel")
-  elseif KEY3 then screen.text("loop") end
-  --]]
 
   screen.level(4)
   screen.move(0,10)
@@ -598,11 +582,11 @@ function redraw()
     screen.text(alt==false and params:string("root_note") or params:string("scale_mode"))
   end
 
-
-
   screen.update()
 end
 
-function cleanup ()
+function cleanup()
   clk:stop()
+  crow.ii.pullup(false)
+  crow.ii.jf.mode(0)
 end
