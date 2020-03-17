@@ -212,9 +212,6 @@ end
 
 local function crow_init()
   
-  crow.reset()
-  crow.clear()
-  
   local crow_tap = 0
   local crow_deltatap = 1
 
@@ -272,7 +269,10 @@ function init()
   clk:add_clock_params()
   params:set("bpm", 91)
   
-  params:add{type = "trigger", id = "clear_crow", name = "reset/clear crow", action = crow_flush}
+  params:add{type = "trigger", id = "clear_crow", name = "reset/clear crow [K3]", action = function()
+    crow.clear()
+    crow.reset()
+  end}
   
   notes_off_metro.event = all_notes_off
   
@@ -285,10 +285,10 @@ function init()
         crow.ii.pullup(true)
         crow.ii.jf.mode(1)
       end
-      if value ~= 5 and value ~= 6 then
-        crow.ii.pullup(false)
-        crow.ii.jf.mode(0)
-      end
+    end}
+  params:add{type = "trigger", id = "reset_jf_ii", name = "reset JF [K3]", action = function()
+    crow.ii.pullup(false)
+    crow.ii.jf.mode(0)
     end}
   params:add{type = "number", id = "midi_out_device", name = "midi out device",
     min = 1, max = 4, default = 1,
@@ -587,6 +587,4 @@ end
 
 function cleanup()
   clk:stop()
-  crow.ii.pullup(false)
-  crow.ii.jf.mode(0)
 end

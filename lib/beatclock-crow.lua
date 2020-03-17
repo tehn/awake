@@ -145,7 +145,7 @@ function BeatClockCrow:add_clock_params()
   )
   params:add_number("bpm", "bpm", 1, 480, self.bpm)
   params:set_action("bpm", function(x) self:bpm_change(x) end)
-  params:add{type = "trigger", id = "tap_tempo", name = "tap tempo", action =
+  params:add{type = "trigger", id = "tap_tempo", name = "tap tempo [K3]", action =
     function()
       local tap1 = util.time()
       deltatap = tap1 - tap
