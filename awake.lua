@@ -1,5 +1,5 @@
 -- awake: time changes
--- 2.2.0 @tehn
+-- 2.3 @tehn
 -- llllllll.co/t/21022
 --
 -- top loop plays notes
@@ -37,7 +37,7 @@ local hs = include('lib/halfsecond')
 local MusicUtil = require "musicutil"
 
 local options = {}
-options.OUTPUT = {"audio", "midi", "audio + midi", "crow out 1+2", "crow ii JF"}
+options.OUTPUT = {"audio", "midi", "audio + midi", "crow out 1+2", "crow ii JF", "crow ii JF + cv"}
 options.STEP_LENGTH_NAMES = {"1 bar", "1/2", "1/3", "1/4", "1/6", "1/8", "1/12", "1/16", "1/24", "1/32", "1/48", "1/64"}
 options.STEP_LENGTH_DIVIDERS = {1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64}
 
@@ -118,7 +118,7 @@ local snd_names = {"cut","gain","pw","rel","fb","rate", "pan", "delay_pan"}
 local snd_params = {"cutoff","gain","pw","release", "delay_feedback","delay_rate", "pan", "delay_pan"}
 local NUM_SND_PARAMS = #snd_params
 
-local BeatClock = require 'beatclock'
+local BeatClock = include 'lib/beatclock-crow'
 local clk = BeatClock.new()
 local clk_midi = midi.connect()
 clk_midi.event = function(data)
@@ -178,6 +178,10 @@ local function step()
         crow.output[2].execute()
       elseif params:get("output") == 5 then
         crow.ii.jf.play_note((note_num-60)/12,5)
+      elseif params:get("output") == 6 then
+        crow.output[1].volts = (note_num-60)/12
+        crow.output[2].execute()
+        crow.ii.jf.play_note((note_num-60)/12,5)
       end
       
       -- MIDI out
@@ -193,8 +197,7 @@ local function step()
     end
   end
 
-  if params:get("crow_clock") == 2 then crow.output[1]:execute() end
-
+  if params:get("crow_clock_out") == 2 then crow.output[4]:execute() end
 
   if g then
     gridredraw()
@@ -207,6 +210,39 @@ local function stop()
   all_notes_off()
 end
 
+local function crow_init()
+  
+  local crow_tap = 0
+  local crow_deltatap = 1
+
+  crow.input[1].mode("change", 1, 0.05, "rising")
+  crow.input[1].change = function(s)
+    if params:get("crow_clock_input") ~= 2 then
+      morph(one, "one")
+      morph(two, "two")
+    else
+      step()
+      local crow_tap1 = util.time()
+      crow_deltatap = crow_tap1 - crow_tap
+      crow_tap = crow_tap1
+      local crow_tap_tempo = (60/crow_deltatap)/4
+      params:set("bpm",math.floor(crow_tap_tempo+0.5))
+    end
+  end
+  crow.input[2].mode("change", 1, 0.05, "rising")
+  crow.input[2].change = function()
+    if params:get("crow_clock_input") ~= 3 then
+      random()
+    else
+      step()
+    end
+  end
+  
+  if params:get("output") == 4 then
+    crow.output[2].action = "{to(5,0),to(0,0.25)}"
+  end
+  
+end
 
 function init()
   for i = 1, #MusicUtil.SCALES do
@@ -214,22 +250,29 @@ function init()
   end
   
   midi_out_device = midi.connect(1)
-  midi_out_device.event = function() end
+  --midi_out_device.event = function() end
   
   clk.on_step = step
   clk.on_stop = stop
-  clk.on_select_internal = function() clk:start() end
-  clk.on_select_external = reset_pattern
+  clk.on_select_internal = function()
+    clk:start()
+    params:set("crow_clock_input",1)
+  end
+  clk.on_select_midi = function()
+    one.pos = 0
+    two.pos = 0
+    params:set("crow_clock_input",1)
+  end
+  clk.on_select_crow = function()
+    params:set("crow_clock_input",2)
+  end
   clk:add_clock_params()
   params:set("bpm", 91)
-
-  params:add{type = "option", id = "crow_clock", name = "crow clock out",
-    options = {"off","on"},
-    action = function(value)
-      if value == 2 then
-        crow.output[1].action = "{to(5,0),to(5,0.05),to(0,0)}"
-      end
-    end}
+  
+  params:add{type = "trigger", id = "clear_crow", name = "reset/clear crow [K3]", action = function()
+    crow.clear()
+    crow.reset()
+  end}
   
   notes_off_metro.event = all_notes_off
   
@@ -238,14 +281,17 @@ function init()
     action = function(value)
       all_notes_off()
       if value == 4 then crow.output[2].action = "{to(5,0),to(0,0.25)}"
-      elseif value == 5 then
+      elseif value == 5 or value == 6 then
         crow.ii.pullup(true)
         crow.ii.jf.mode(1)
       end
     end}
+  params:add{type = "trigger", id = "reset_jf_ii", name = "reset JF [K3]", action = function()
+    crow.ii.pullup(false)
+    crow.ii.jf.mode(0)
+    end}
   params:add{type = "number", id = "midi_out_device", name = "midi out device",
     min = 1, max = 4, default = 1,
-    
     action = function(value) midi_out_device = midi.connect(value) end}
   params:add{type = "number", id = "midi_out_channel", name = "midi out channel",
     min = 1, max = 16, default = 1,
@@ -299,15 +345,7 @@ function init()
   params:add{type="control",id="pan",controlspec=cs_PAN,
     action=function(x) engine.pan(x) end}
 
-
-
-  crow.input[1].mode("change", 1, 0.05, "rising")
-  crow.input[1].change = function(s)
-    morph(one, "one")
-    morph(two, "two")
-  end
-  crow.input[2].mode("change", 1, 0.05, "rising")
-  crow.input[2].change = random
+  crow_init()
 
   clk:start()
 
@@ -469,20 +507,6 @@ function key(n,z)
     end
   end
 
---[[
-      gridredraw()
-      
-      
-      if not clk.external then
-        if clk.playing then
-          clk:stop()
-        else
-          clk:start()
-        end
-      end
-
-]]--
-
   redraw()
 end
 
@@ -525,22 +549,6 @@ function redraw()
     screen.level(i == two.pos and 15 or ((edit_ch == 2 and two.data[i] > 0) and 4 or (mode==2 and 6 or 1)))
     screen.stroke()
   end
-  -- txt
---[[  screen.level((not alt and not KEY3) and 15 or 4)
-  screen.move(0,10)
-  screen.text("bpm:"..params:get("bpm"))
-  screen.level(alt and 15 or 4)
-  screen.move(0,20)
-  screen.text("sc:"..params:get("scale_mode"))
-  screen.level(KEY3 and 15 or 4)
-  screen.move(0,30)
-  screen.text("rt:"..MusicUtil.note_num_to_name(params:get("root_note"), true))
-
-  screen.level(4)
-  screen.move(0,60)
-  if alt then screen.text("cut/rel")
-  elseif KEY3 then screen.text("loop") end
-  --]]
 
   screen.level(4)
   screen.move(0,10)
@@ -574,11 +582,9 @@ function redraw()
     screen.text(alt==false and params:string("root_note") or params:string("scale_mode"))
   end
 
-
-
   screen.update()
 end
 
-function cleanup ()
+function cleanup()
   clk:stop()
 end
