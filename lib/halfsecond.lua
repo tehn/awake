@@ -34,7 +34,7 @@ function sc.init()
 
   params:add_separator()
   params:add{id="delay", name="delay", type="control", 
-    controlspec=controlspec.new(0,1,'lin',0,1,""),
+    controlspec=controlspec.new(0,1,'lin',0,0.5,""),
     action=function(x) softcut.level(1,x) end}
   params:add{id="delay_rate", name="delay rate", type="control", 
     controlspec=controlspec.new(0.5,2.0,'lin',0,1,""),
