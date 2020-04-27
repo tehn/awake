@@ -60,7 +60,7 @@ two = {
 
 function add_pattern_params() 
   params:add_separator()
-  params:add_group("pattern 1",18)
+  params:add_group("pattern 1",17)
   
   params:add{type = "number", id = "one_length", name = "length", min=1, max=16, 
     default = one.length,
@@ -72,7 +72,7 @@ function add_pattern_params()
       action=function(x)one.data[i] = x end }
   end
   
-  params:add_group("pattern 2",18)
+  params:add_group("pattern 2",17)
   
   params:add{type = "number", id = "two_length", name = "length",  min=1, max=16, 
     default = two.length,
