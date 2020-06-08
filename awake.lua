@@ -222,7 +222,7 @@ function init()
     end}
   params:add_separator()
   
-  params:add{type = "number", id = "step_div", name = "step division", default = 4}
+  params:add{type = "number", id = "step_div", name = "step division", min = 1, max = 16, default = 4}
 
   params:add{type = "option", id = "note_length", name = "note length",
     options = {"25%", "50%", "75%", "100%"},
