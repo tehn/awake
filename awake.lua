@@ -172,7 +172,7 @@ function step()
           --local note_off_time = 
           -- Note off timeout
           if params:get("note_length") < 4 then
-            notes_off_metro:start((60 / params:get("clock_tempo") / params:get("step_div")) * params:get("note_length"), 1)
+            notes_off_metro:start((60 / params:get("clock_tempo") / params:get("step_div")) * params:get("note_length") * 0.25, 1)
           end
         end
       end
