@@ -42,6 +42,7 @@ options.OUTPUT = {"audio", "midi", "audio + midi", "crow out 1+2", "crow ii JF"}
 g = grid.connect()
 
 alt = false
+running = true
 
 mode = 1
 mode_names = {"STEP","LOOP","SOUND","OPTION"}
@@ -91,8 +92,8 @@ set_loop_data = function(which, step, val)
 end
 
 
-local midi_out_device
-local midi_out_channel
+local midi_device
+local midi_channel
 
 local scale_names = {}
 local notes = {}
@@ -119,7 +120,7 @@ end
 function all_notes_off()
   if (params:get("output") == 2 or params:get("output") == 3) then
     for _, a in pairs(active_notes) do
-      midi_out_device:note_off(a, nil, midi_out_channel)
+      midi_device:note_off(a, nil, midi_channel)
     end
   end
   active_notes = {}
@@ -140,64 +141,100 @@ end
 
 function step()
   while true do
+
     clock.sync(1/params:get("step_div"))
+    if running then
+      all_notes_off()
 
-    all_notes_off()
+      one.pos = one.pos + 1
+      if one.pos > one.length then one.pos = 1 end
+      two.pos = two.pos + 1
+      if two.pos > two.length then two.pos = 1 end
 
-    one.pos = one.pos + 1
-    if one.pos > one.length then one.pos = 1 end
-    two.pos = two.pos + 1
-    if two.pos > two.length then two.pos = 1 end
+      if one.data[one.pos] > 0 then
+        local note_num = notes[one.data[one.pos]+two.data[two.pos]]
+        local freq = MusicUtil.note_num_to_freq(note_num)
+        -- Trig Probablility
+        if math.random(100) <= params:get("probability") then
+          -- Audio engine out
+          if params:get("output") == 1 or params:get("output") == 3 then
+            engine.hz(freq)
+          elseif params:get("output") == 4 then
+            crow.output[1].volts = (note_num-60)/12
+            crow.output[2].execute()
+          elseif params:get("output") == 5 then
+            crow.ii.jf.play_note((note_num-60)/12,5)
+          end
 
-    if one.data[one.pos] > 0 then
-      local note_num = notes[one.data[one.pos]+two.data[two.pos]]
-      local freq = MusicUtil.note_num_to_freq(note_num)
-      -- Trig Probablility
-      if math.random(100) <= params:get("probability") then
-        -- Audio engine out
-        if params:get("output") == 1 or params:get("output") == 3 then
-          engine.hz(freq)
-        elseif params:get("output") == 4 then
-          crow.output[1].volts = (note_num-60)/12
-          crow.output[2].execute()
-        elseif params:get("output") == 5 then
-          crow.ii.jf.play_note((note_num-60)/12,5)
-        end
+          -- MIDI out
+          if (params:get("output") == 2 or params:get("output") == 3) then
+            midi_device:note_on(note_num, 96, midi_channel)
+            table.insert(active_notes, note_num)
 
-        -- MIDI out
-        if (params:get("output") == 2 or params:get("output") == 3) then
-          midi_out_device:note_on(note_num, 96, midi_out_channel)
-          table.insert(active_notes, note_num)
-
-          --local note_off_time = 
-          -- Note off timeout
-          if params:get("note_length") < 4 then
-            notes_off_metro:start((60 / params:get("clock_tempo") / params:get("step_div")) * params:get("note_length") * 0.25, 1)
+            --local note_off_time = 
+            -- Note off timeout
+            if params:get("note_length") < 4 then
+              notes_off_metro:start((60 / params:get("clock_tempo") / params:get("step_div")) * params:get("note_length") * 0.25, 1)
+            end
           end
         end
       end
-    end
 
-    if g then
-      gridredraw()
+      if g then
+        gridredraw()
+      end
+      redraw()
+    else
     end
-    redraw()
   end
 end
-
 function stop()
   all_notes_off()
 end
 
+function clock.transport.start()
+  running = true
+  --id = clock.run(pulse)
+  --running = true
+end
+
+function clock.transport.stop()
+  running = false
+  stop()
+end
+
+function clock.transport.reset()
+  --print("transport.reset")
+  one.pos = 1
+  two.pos = 1
+end
+
+function midi_event(data)
+  msg = midi.to_msg(data)
+  if msg.type == "start" then
+      clock.transport.reset()
+      clock.transport.start()
+  elseif msg.type == "continue" then
+    if running then 
+      clock.transport.stop()
+    else 
+      clock.transport.start()
+    end
+  end 
+  if msg.type == "stop" then
+    clock.transport.stop()
+  end 
+end
 
 function init()
   for i = 1, #MusicUtil.SCALES do
     table.insert(scale_names, string.lower(MusicUtil.SCALES[i].name))
   end
   
-  midi_out_device = midi.connect(1)
-  midi_out_device.event = function() end
-  
+  midi_device = midi.connect(1)
+  -- midi_out_device.event = function() end
+  midi_device.event = midi_event
+
   notes_off_metro.event = all_notes_off
   
   params:add{type = "option", id = "output", name = "output",
@@ -210,15 +247,15 @@ function init()
         crow.ii.jf.mode(1)
       end
     end}
-  params:add{type = "number", id = "midi_out_device", name = "midi out device",
+  params:add{type = "number", id = "midi_device", name = "midi out device",
     min = 1, max = 4, default = 1,
     
-    action = function(value) midi_out_device = midi.connect(value) end}
+    action = function(value) midi_device = midi.connect(value) end}
   params:add{type = "number", id = "midi_out_channel", name = "midi out channel",
     min = 1, max = 16, default = 1,
     action = function(value)
       all_notes_off()
-      midi_out_channel = value
+      midi_channel = value
     end}
   params:add_separator()
   
