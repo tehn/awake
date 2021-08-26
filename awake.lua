@@ -60,7 +60,7 @@ two = {
 }
 
 function add_pattern_params() 
-  params:add_separator()
+  params:add_separator("pattern data")
   params:add_group("pattern 1",17)
   
   params:add{type = "number", id = "one_length", name = "length", min=1, max=16, 
@@ -91,7 +91,7 @@ set_loop_data = function(which, step, val)
   params:set(which.."_data_"..step, val)
 end
 
-
+local midi_devices
 local midi_device
 local midi_channel
 
@@ -188,25 +188,31 @@ function step()
     end
   end
 end
+
 function stop()
+  running = false
   all_notes_off()
 end
 
-function clock.transport.start()
+function start()
   running = true
-  --id = clock.run(pulse)
-  --running = true
+end
+
+function reset()
+  one.pos = 1
+  two.pos = 1
+end
+
+function clock.transport.start()
+  start()
 end
 
 function clock.transport.stop()
-  running = false
   stop()
 end
 
 function clock.transport.reset()
-  --print("transport.reset")
-  one.pos = 1
-  two.pos = 1
+  reset()
 end
 
 function midi_event(data)
@@ -226,17 +232,27 @@ function midi_event(data)
   end 
 end
 
+function build_midi_device_list()
+  midi_devices = {}
+  for i = 1,#midi.vports do
+    local long_name = midi.vports[i].name
+    local short_name = string.len(long_name) > 15 and util.acronym(long_name) or long_name
+    table.insert(midi_devices,i..": "..short_name)
+  end
+end
+
 function init()
   for i = 1, #MusicUtil.SCALES do
     table.insert(scale_names, string.lower(MusicUtil.SCALES[i].name))
   end
   
-  midi_device = midi.connect(1)
-  -- midi_out_device.event = function() end
-  midi_device.event = midi_event
+  build_midi_device_list()
 
   notes_off_metro.event = all_notes_off
   
+  params:add_separator("AWAKE")
+  
+  params:add_group("output",3)
   params:add{type = "option", id = "output", name = "output",
     options = options.OUTPUT,
     action = function(value)
@@ -247,18 +263,18 @@ function init()
         crow.ii.jf.mode(1)
       end
     end}
-  params:add{type = "number", id = "midi_device", name = "midi out device",
-    min = 1, max = 4, default = 1,
-    
+  params:add{type = "option", id = "midi_device", name = "midi out device",
+    options = midi_devices, default = 1,
     action = function(value) midi_device = midi.connect(value) end}
+  
   params:add{type = "number", id = "midi_out_channel", name = "midi out channel",
     min = 1, max = 16, default = 1,
     action = function(value)
       all_notes_off()
       midi_channel = value
     end}
-  params:add_separator()
   
+  params:add_group("step params",8)
   params:add{type = "number", id = "step_div", name = "step division", min = 1, max = 16, default = 4}
 
   params:add{type = "option", id = "note_length", name = "note length",
@@ -272,9 +288,15 @@ function init()
     min = 0, max = 127, default = 60, formatter = function(param) return MusicUtil.note_num_to_name(param:get(), true) end,
     action = function() build_scale() end}
   params:add{type = "number", id = "probability", name = "probability",
-    min = 0, max = 100, default = 100,}
-  params:add_separator()
-
+    min = 0, max = 100, default = 100}
+  params:add{type = "trigger", id = "stop", name = "stop",
+    action = function() stop() reset() end}
+  params:add{type = "trigger", id = "start", name = "start",
+    action = function() start() end}
+  params:add{type = "trigger", id = "reset", name = "reset",
+    action = function() reset() end}
+  
+  params:add_group("synth params",6)
   cs_AMP = controlspec.new(0,1,'lin',0,0.5,'')
   params:add{type="control",id="amp",controlspec=cs_AMP,
     action=function(x) engine.amp(x) end}
@@ -303,6 +325,7 @@ function init()
   
   add_pattern_params()
   params:default()
+  midi_device.event = midi_event
 
   clock.run(step)
 
@@ -539,5 +562,5 @@ function redraw()
   screen.update()
 end
 
-function cleanup ()
+function cleanup()
 end
