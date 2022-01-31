@@ -37,7 +37,7 @@ hs = include('lib/halfsecond')
 MusicUtil = require "musicutil"
 
 options = {}
-options.OUTPUT = {"audio", "midi", "audio + midi", "crow out 1+2", "crow ii JF"}
+options.OUT = {"audio", "midi", "audio + midi", "crow out 1+2", "crow ii JF"}
 
 g = grid.connect()
 
@@ -118,7 +118,7 @@ function build_scale()
 end
 
 function all_notes_off()
-  if (params:get("output") == 2 or params:get("output") == 3) then
+  if (params:get("out") == 2 or params:get("out") == 3) then
     for _, a in pairs(active_notes) do
       midi_device:note_off(a, nil, midi_channel)
     end
@@ -157,17 +157,17 @@ function step()
         -- Trig Probablility
         if math.random(100) <= params:get("probability") then
           -- Audio engine out
-          if params:get("output") == 1 or params:get("output") == 3 then
+          if params:get("out") == 1 or params:get("out") == 3 then
             engine.hz(freq)
-          elseif params:get("output") == 4 then
+          elseif params:get("out") == 4 then
             crow.output[1].volts = (note_num-60)/12
             crow.output[2].execute()
-          elseif params:get("output") == 5 then
+          elseif params:get("out") == 5 then
             crow.ii.jf.play_note((note_num-60)/12,5)
           end
 
           -- MIDI out
-          if (params:get("output") == 2 or params:get("output") == 3) then
+          if (params:get("out") == 2 or params:get("out") == 3) then
             midi_device:note_on(note_num, 96, midi_channel)
             table.insert(active_notes, note_num)
 
@@ -252,9 +252,9 @@ function init()
   
   params:add_separator("AWAKE")
   
-  params:add_group("output",3)
-  params:add{type = "option", id = "output", name = "output",
-    options = options.OUTPUT,
+  params:add_group("outs",3)
+  params:add{type = "option", id = "out", name = "out",
+    options = options.OUT,
     action = function(value)
       all_notes_off()
       if value == 4 then crow.output[2].action = "{to(5,0),to(0,0.25)}"
