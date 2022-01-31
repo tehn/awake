@@ -160,8 +160,8 @@ function step()
           if params:get("out") == 1 or params:get("out") == 3 then
             engine.hz(freq)
           elseif params:get("out") == 4 then
-            crow.out[1].volts = (note_num-60)/12
-            crow.out[2].execute()
+            crow.output[1].volts = (note_num-60)/12
+            crow.output[2].execute()
           elseif params:get("out") == 5 then
             crow.ii.jf.play_note((note_num-60)/12,5)
           end
