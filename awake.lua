@@ -252,7 +252,7 @@ function init()
   
   params:add_separator("AWAKE")
   
-  params:add_group("out",3)
+  params:add_group("outs",3)
   params:add{type = "option", id = "out", name = "out",
     options = options.OUT,
     action = function(value)
