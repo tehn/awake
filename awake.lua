@@ -1,6 +1,6 @@
 -- awake: time changes
--- 2.4.1 @tehn
--- llllllll.co/t/21022
+-- 2.5.0 @tehn
+-- l.llllllll.co/awake
 --
 -- top loop plays notes
 -- transposed by bottom loop
