@@ -32,7 +32,7 @@ function sc.init()
 	softcut.filter_bp(1, 1.0);
 	softcut.filter_rq(1, 2.0);
 
-  params:add_group("halfsecond params",4)
+  params:add_group("halfsecond",4)
   params:add{id="delay", name="delay", type="control", 
     controlspec=controlspec.new(0,1,'lin',0,0.5,""),
     action=function(x) softcut.level(1,x) end}

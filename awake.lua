@@ -274,7 +274,7 @@ function init()
       midi_channel = value
     end}
   
-  params:add_group("step params",8)
+  params:add_group("step",8)
   params:add{type = "number", id = "step_div", name = "step division", min = 1, max = 16, default = 4}
 
   params:add{type = "option", id = "note_length", name = "note length",
@@ -296,7 +296,7 @@ function init()
   params:add{type = "trigger", id = "reset", name = "reset",
     action = function() reset() end}
   
-  params:add_group("synth params",6)
+  params:add_group("synth",6)
   cs_AMP = controlspec.new(0,1,'lin',0,0.5,'')
   params:add{type="control",id="amp",controlspec=cs_AMP,
     action=function(x) engine.amp(x) end}
