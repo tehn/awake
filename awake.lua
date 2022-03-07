@@ -1,5 +1,5 @@
 -- awake: time changes
--- 2.5.0 @tehn
+-- 2.6.0 @tehn
 -- l.llllllll.co/awake
 --
 -- top loop plays notes
