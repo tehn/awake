@@ -37,7 +37,7 @@ hs = include('lib/halfsecond')
 MusicUtil = require "musicutil"
 
 options = {}
-options.OUT = {"audio", "midi", "audio + midi", "crow out 1+2", "crow ii JF"}
+options.OUT = {"audio", "midi", "audio + midi", "crow out 1+2", "crow ii JF", "crow ii 301"}
 
 g = grid.connect()
 
@@ -164,6 +164,9 @@ function step()
             crow.output[2].execute()
           elseif params:get("out") == 5 then
             crow.ii.jf.play_note((note_num-60)/12,5)
+          elseif params:get("out") == 6 then -- er301
+            crow.ii.er301.cv(1, (note_num-60)/12)
+            crow.ii.er301.tr_pulse(1)
           end
 
           -- MIDI out
@@ -258,7 +261,7 @@ function init()
     action = function(value)
       all_notes_off()
       if value == 4 then crow.output[2].action = "{to(5,0),to(0,0.25)}"
-      elseif value == 5 then
+      elseif value == 5 or value == 6 then
         crow.ii.pullup(true)
         crow.ii.jf.mode(1)
       end
