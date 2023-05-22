@@ -153,7 +153,7 @@ function step()
 
       if one.data[one.pos] > 0 then
         local note_num = notes[one.data[one.pos]+two.data[two.pos]]
-        local freq = MusicUtil.note_num_to_freq(note_num)
+        local freq = MusicUtil.note_num_to_freq(note_num + (params:get("detune")*0.01))
         -- Trig Probablility
         if math.random(100) <= params:get("probability") then
           -- Audio engine out
@@ -324,6 +324,7 @@ function init()
   params:add{type="control",id="pan",controlspec=cs_PAN,
     action=function(x) engine.pan(x) end}
 
+  params:add{type="number",id="detune",min=-100, max=100, default=0}
   hs.init()
   
   add_pattern_params()
