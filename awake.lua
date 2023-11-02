@@ -40,6 +40,7 @@ options = {}
 options.OUT = {"audio", "midi", "audio + midi", "crow out 1+2", "crow ii JF", "crow ii 301"}
 
 g = grid.connect()
+a = arc.connect()
 
 alt = false
 running = true
@@ -183,9 +184,8 @@ function step()
         end
       end
 
-      if g then
-        gridredraw()
-      end
+      gridredraw()
+      arcredraw()
       redraw()
     else
     end
@@ -299,34 +299,52 @@ function init()
   params:add{type = "trigger", id = "reset", name = "reset",
     action = function() reset() end}
   
-  params:add_group("synth",6)
+  params:add_group("synth", 7)
   cs_AMP = controlspec.new(0,1,'lin',0,0.5,'')
   params:add{type="control",id="amp",controlspec=cs_AMP,
     action=function(x) engine.amp(x) end}
 
   cs_PW = controlspec.new(0,100,'lin',0,50,'%')
   params:add{type="control",id="pw",controlspec=cs_PW,
-    action=function(x) engine.pw(x/100) end}
+    action=function(x) engine.pw(x/100); arcredraw() end}
 
   cs_REL = controlspec.new(0.1,3.2,'lin',0,1.2,'s')
   params:add{type="control",id="release",controlspec=cs_REL,
-    action=function(x) engine.release(x) end}
+    action=function(x) engine.release(x); arcredraw() end}
 
   cs_CUT = controlspec.new(50,5000,'exp',0,800,'hz')
   params:add{type="control",id="cutoff",controlspec=cs_CUT,
-    action=function(x) engine.cutoff(x) end}
+    action=function(x) engine.cutoff(x); arcredraw() end}
 
   cs_GAIN = controlspec.new(0,4,'lin',0,1,'')
   params:add{type="control",id="gain",controlspec=cs_GAIN,
-    action=function(x) engine.gain(x) end}
+    action=function(x) engine.gain(x); arcredraw() end}
   
   cs_PAN = controlspec.new(-1,1, 'lin',0,0,'')
   params:add{type="control",id="pan",controlspec=cs_PAN,
     action=function(x) engine.pan(x) end}
 
   params:add{type="number",id="detune",min=-100, max=100, default=0}
+
   hs.init()
-  
+
+  params:add{type="option",id="grid_rotation",name="Grid rotation",
+    options={"0","90","180","270"},default=1,
+    action=function(value)
+      if g then
+        g:rotation(value - 1)
+        gridredraw()
+      end
+    end
+  }
+
+  params:add{type="option",id="arc_rotation",name="Arc rotation",
+    options={"0","90","180","270"},default=1,
+    action=function(value)
+      arcredraw()
+    end
+  }
+
   add_pattern_params()
   params:default()
   midi_device.event = midi_event
@@ -360,6 +378,10 @@ function g.key(x, y, z)
 end
 
 function gridredraw()
+  if not g then
+    return
+  end
+
   local grid_h = g.rows
   g:all(0)
   if edit_ch == 1 or grid_h == 16 then
@@ -385,6 +407,67 @@ function gridredraw()
     end
   end
   g:refresh()
+end
+
+function a.delta(n, d)
+  if n == 1 then
+    params:delta("pw", 0.2 * d)
+  elseif n == 2 then
+    -- cutoff is exponential; we use the controlspec
+    -- for adjustments to feel natural
+    local now = cs_CUT:unmap(params:get("cutoff"))
+    local delta = 0.002
+    params:set("cutoff", cs_CUT:map(now + delta * d))
+  elseif n == 3 then
+    params:delta("gain", 0.2 * d)
+  elseif n == 4 then
+    params:delta("release", 0.2 * d)
+  end
+end
+
+function arcredraw()
+  if not a then
+    return
+  end
+
+  -- Arc doesn't have built-in rotation support so we do
+  -- it ourselves.
+  local rot = 16 * (params:get("arc_rotation") - 1)
+  a:all(0)
+  a:led(1, rot + 1, 4)
+  a:led(2, rot + 1, 4)
+  a:led(3, rot + 1, 4)
+  a:led(4, rot + 1, 4)
+
+  -- ARC 1
+  local percentage = 64 * cs_PW:unmap(params:get("pw"))
+  for i=1,64 do
+    if percentage >= i then
+      a:led(1, (i-1 + rot) % 64 + 1, 15)
+    end
+  end
+  -- ARC 2
+  percentage = 64 * cs_CUT:unmap(params:get("cutoff"))
+  for i=1,64 do
+    if percentage >= i then
+      a:led(2, (i-1 + rot) % 64 + 1, 15)
+    end
+  end
+  -- ARC 3
+  percentage = 64 * cs_GAIN:unmap(params:get("gain"))
+  for i=1,64 do
+    if percentage >= i then
+      a:led(3, (i-1 + rot) % 64 + 1, 15)
+    end
+  end
+  -- ARC 4
+  percentage = 64 * cs_REL:unmap(params:get("release"))
+  for i=1,64 do
+    if percentage >= i then
+      a:led(4, (i-1 + rot) % 64 + 1, 15)
+    end
+  end
+  a:refresh()
 end
 
 function enc(n, delta)
