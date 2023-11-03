@@ -253,7 +253,7 @@ function init()
 
   notes_off_metro.event = all_notes_off
   arc_redraw_metro.event = arcredraw
-  arc_redraw_metro:start(1 / 30)
+  arc_redraw_metro:start(1 / 60)
 
   
   params:add_separator("AWAKE")
