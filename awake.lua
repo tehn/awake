@@ -109,6 +109,7 @@ snd_params = {"cutoff","gain","pw","release", "delay_feedback","delay_rate", "pa
 NUM_SND_PARAMS = #snd_params
 
 notes_off_metro = metro.init()
+arc_redraw_metro = metro.init()
 
 function build_scale()
   notes = MusicUtil.generate_scale_of_length(params:get("root_note"), params:get("scale_mode"), 16)
@@ -185,7 +186,6 @@ function step()
       end
 
       gridredraw()
-      arcredraw()
       redraw()
     else
     end
@@ -252,6 +252,9 @@ function init()
   build_midi_device_list()
 
   notes_off_metro.event = all_notes_off
+  arc_redraw_metro.event = arcredraw
+  arc_redraw_metro:start(1 / 30)
+
   
   params:add_separator("AWAKE")
   
@@ -306,19 +309,19 @@ function init()
 
   cs_PW = controlspec.new(0,100,'lin',0,50,'%')
   params:add{type="control",id="pw",controlspec=cs_PW,
-    action=function(x) engine.pw(x/100); arcredraw() end}
+    action=function(x) engine.pw(x/100) end}
 
   cs_REL = controlspec.new(0.1,3.2,'lin',0,1.2,'s')
   params:add{type="control",id="release",controlspec=cs_REL,
-    action=function(x) engine.release(x); arcredraw() end}
+    action=function(x) engine.release(x) end}
 
   cs_CUT = controlspec.new(50,5000,'exp',0,800,'hz')
   params:add{type="control",id="cutoff",controlspec=cs_CUT,
-    action=function(x) engine.cutoff(x); arcredraw() end}
+    action=function(x) engine.cutoff(x) end}
 
   cs_GAIN = controlspec.new(0,4,'lin',0,1,'')
   params:add{type="control",id="gain",controlspec=cs_GAIN,
-    action=function(x) engine.gain(x); arcredraw() end}
+    action=function(x) engine.gain(x) end}
   
   cs_PAN = controlspec.new(-1,1, 'lin',0,0,'')
   params:add{type="control",id="pan",controlspec=cs_PAN,
@@ -339,11 +342,7 @@ function init()
   }
 
   params:add{type="option",id="arc_rotation",name="Arc rotation",
-    options={"0","90","180","270"},default=1,
-    action=function(value)
-      arcredraw()
-    end
-  }
+    options={"0","90","180","270"},default=1}
 
   add_pattern_params()
   params:default()
