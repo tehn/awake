@@ -1,5 +1,5 @@
 -- awake: time changes
--- 2.6.0 @tehn
+-- 2.7.0 @tehn
 -- l.llllllll.co/awake
 --
 -- top loop plays notes
@@ -202,11 +202,12 @@ function start()
 end
 
 function reset()
-  one.pos = 1
-  two.pos = 1
+  one.pos = 0
+  two.pos = 0
 end
 
 function clock.transport.start()
+  reset()
   start()
 end
 
