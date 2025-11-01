@@ -1,11 +1,11 @@
 -- awake: time changes
--- 2.7.0 @tehn
+-- 2.8.0 @tehn
 -- l.llllllll.co/awake
 --
 -- top loop plays notes
 -- transposed by bottom loop
 --
--- (grid optional)
+-- (grid optional, arc optional)
 --
 -- E1 changes modes:
 -- STEP/LOOP/SOUND/OPTION
@@ -110,6 +110,7 @@ NUM_SND_PARAMS = #snd_params
 
 notes_off_metro = metro.init()
 arc_redraw_metro = metro.init()
+arc_long_press_metro = metro.init()
 
 function build_scale()
   notes = MusicUtil.generate_scale_of_length(params:get("root_note"), params:get("scale_mode"), 16)
@@ -345,6 +346,12 @@ function init()
   params:add{type="option",id="arc_rotation",name="Arc rotation",
     options={"0","90","180","270"},default=1}
 
+  params:add{type="option",id="grid_brightness",name="Grid brightness",
+    options={"bright","medium","dim"},default=1}
+
+  params:add{type="option",id="arc_brightness",name="Arc brightness",
+    options={"bright","medium","dim"},default=1}
+
   add_pattern_params()
   params:default()
   midi_device.event = midi_event
@@ -384,6 +391,7 @@ function gridredraw()
 
   local grid_h = g.rows
   g:all(0)
+  g:intensity(15 - 5 * (params:get("grid_brightness") - 1))
   if edit_ch == 1 or grid_h == 16 then
     for x = 1, 16 do
       if one.data[x] > 0 then g:led(x, 9-one.data[x], 5) end
@@ -409,6 +417,18 @@ function gridredraw()
   g:refresh()
 end
 
+function arc_press_reset()
+  arc_long_press_metro.event = nil
+  reset()
+  gridredraw()
+  redraw()
+end
+
+function arc_press_stop()
+  arc_long_press_metro.event = nil
+  stop()
+end
+
 function a.delta(n, d)
   if n == 1 then
     params:delta("pw", 0.2 * d)
@@ -425,6 +445,34 @@ function a.delta(n, d)
   end
 end
 
+function a.key(n,z)
+  local now = util.time()
+  if n ~= 1 then
+    return
+  end
+
+  if z == 1 then
+    arc_long_press_metro:stop()
+    if running then
+      arc_long_press_metro.event = arc_press_stop
+    else
+      arc_long_press_metro.event = arc_press_reset
+    end
+    arc_long_press_metro:start(0.5)
+  elseif z == 0 then
+    arc_long_press_metro:stop()
+    if arc_long_press_metro.event == nil then
+      return  --long press event already happened
+    end
+    arc_long_press_metro.event = nil
+    if running then
+        reset()
+    else
+        start()
+    end
+  end
+end
+
 function arcredraw()
   if not a then
     return
@@ -433,38 +481,39 @@ function arcredraw()
   -- Arc doesn't have built-in rotation support so we do
   -- it ourselves.
   local rot = 16 * (params:get("arc_rotation") - 1)
+  local br = 15 - 5 * (params:get("arc_brightness") - 1)
   a:all(0)
-  a:led(1, rot + 1, 4)
-  a:led(2, rot + 1, 4)
-  a:led(3, rot + 1, 4)
-  a:led(4, rot + 1, 4)
+  a:led(1, rot + 1, math.floor(br / 3))
+  a:led(2, rot + 1, math.floor(br / 3))
+  a:led(3, rot + 1, math.floor(br / 3))
+  a:led(4, rot + 1, math.floor(br / 3))
 
   -- ARC 1
   local percentage = 64 * cs_PW:unmap(params:get("pw"))
   for i=1,64 do
     if percentage >= i then
-      a:led(1, (i-1 + rot) % 64 + 1, 15)
+      a:led(1, (i-1 + rot) % 64 + 1, br)
     end
   end
   -- ARC 2
   percentage = 64 * cs_CUT:unmap(params:get("cutoff"))
   for i=1,64 do
     if percentage >= i then
-      a:led(2, (i-1 + rot) % 64 + 1, 15)
+      a:led(2, (i-1 + rot) % 64 + 1, br)
     end
   end
   -- ARC 3
   percentage = 64 * cs_GAIN:unmap(params:get("gain"))
   for i=1,64 do
     if percentage >= i then
-      a:led(3, (i-1 + rot) % 64 + 1, 15)
+      a:led(3, (i-1 + rot) % 64 + 1, br)
     end
   end
   -- ARC 4
   percentage = 64 * cs_REL:unmap(params:get("release"))
   for i=1,64 do
     if percentage >= i then
-      a:led(4, (i-1 + rot) % 64 + 1, 15)
+      a:led(4, (i-1 + rot) % 64 + 1, br)
     end
   end
   a:refresh()
