@@ -164,7 +164,7 @@ function step()
             engine.hz(freq)
           elseif params:get("out") == 4 then
             crow.output[1].volts = (note_num-60)/12
-	    crow.output[2].action = "ar(0.001,"..clock:get_beat_sec()/params:get("step_div")/4 * params:get("note_length")..",5,'linear')"
+            crow.output[2].action = "ar(0.001,"..clock:get_beat_sec()/params:get("step_div")/4 * params:get("note_length")..",5,'linear')"
 	    crow.output[2]()
           elseif params:get("out") == 5 then
             crow.ii.jf.play_note((note_num-60)/12,5)
