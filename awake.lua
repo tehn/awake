@@ -164,7 +164,8 @@ function step()
             engine.hz(freq)
           elseif params:get("out") == 4 then
             crow.output[1].volts = (note_num-60)/12
-            crow.output[2].execute()
+	    crow.output[2].action = "ar(0.001,"..clock:get_beat_sec()/params:get("step_div")/4 * params:get("note_length")..",5,'linear')"
+	    crow.output[2]()
           elseif params:get("out") == 5 then
             crow.ii.jf.play_note((note_num-60)/12,5)
           elseif params:get("out") == 6 then -- er301
@@ -265,7 +266,7 @@ function init()
     options = options.OUT,
     action = function(value)
       all_notes_off()
-      if value == 4 then crow.output[2].action = "{to(5,0),to(0,0.25)}"
+      if value == 4 then crow.output[2].slew = 0.01
       elseif value == 5 or value == 6 then
         crow.ii.pullup(true)
         crow.ii.jf.mode(1)
