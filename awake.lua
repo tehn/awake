@@ -392,27 +392,30 @@ function gridredraw()
 
   local grid_h = g.rows
   g:all(0)
-  g:intensity(15 - 5 * (params:get("grid_brightness") - 1))
+  local low_br = 5 - 2 * (params:get("grid_brightness") - 1)
+  local high_br = 15 - 4 * (params:get("grid_brightness") - 1)
+  local idle_br = 4 - params:get("grid_brightness")
+
   if edit_ch == 1 or grid_h == 16 then
     for x = 1, 16 do
-      if one.data[x] > 0 then g:led(x, 9-one.data[x], 5) end
+      if one.data[x] > 0 then g:led(x, 9-one.data[x], low_br) end
     end
     if one.pos > 0 and one.data[one.pos] > 0 then
-      g:led(one.pos, 9-one.data[one.pos], 15)
+      g:led(one.pos, 9-one.data[one.pos], high_br)
     else
-      g:led(one.pos, 1, 3)
+      g:led(one.pos, 1, idle_br)
     end
   end
   if edit_ch == 2 or grid_h == 16 then
     local y_offset = 0
     if grid_h == 16 then y_offset = 8 end
     for x = 1, 16 do
-      if two.data[x] > 0 then g:led(x, 9-two.data[x] + y_offset, 5) end
+      if two.data[x] > 0 then g:led(x, 9-two.data[x] + y_offset, low_br) end
     end
     if two.pos > 0 and two.data[two.pos] > 0 then
-      g:led(two.pos, 9-two.data[two.pos] + y_offset, 15)
+      g:led(two.pos, 9-two.data[two.pos] + y_offset, high_br)
     else
-      g:led(two.pos, 1 + y_offset, 3)
+      g:led(two.pos, 1 + y_offset, idle_br)
     end
   end
   g:refresh()
